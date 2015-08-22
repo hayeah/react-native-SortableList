@@ -26,7 +26,7 @@ var {
   StatusBarIOS,
 } = React;
 
-StatusBarIOS.setHidden(true);
+// StatusBarIOS.setHidden(true);
 
 let ListItem = React.createClass({
   componentDidMount() {
@@ -110,14 +110,13 @@ let List = React.createClass({
   },
 
   reorderItemsOnMove(e) {
-    const {pageY} = e.nativeEvent;
     const {movingItemKey, items} = this.state;
 
     if(movingItemKey == null) {
       return;
     }
 
-    let rowKey = this.findKeyOfItemAtPageY(pageY);
+    let rowKey = this.findKeyOfItem(e);
 
     // Check if cursor is outside the last item. Use the last item's key.
     if(rowKey == null) {
@@ -151,7 +150,8 @@ let List = React.createClass({
     }
   },
 
-  findKeyOfItemAtPageY(pageY) {
+  findKeyOfItem(e) {
+    const contentY = this.extractContentY(e);
     const {items,layouts} = this.state;
 
     let curHeight = 0;
@@ -162,7 +162,7 @@ let List = React.createClass({
       const key = keys[i];
       const layout = layouts[key];
       curHeight = curHeight + layout.height;
-      if(pageY < curHeight) {
+      if(contentY < curHeight) {
         rowKey = key;
         break;
       }
@@ -171,53 +171,39 @@ let List = React.createClass({
     return rowKey;
   },
 
-  distanceFromListTop(pageY) {
-    const listDom = this.refs.list.getDOMNode();
-    const y = pageY - listDom.offsetTop;
-    return y;
-  },
-
-  handleMouseUp() {
-    this.setState({
-      movingItemKey: null,
-      movingY: null,
-    });
-  },
-
-  handleMousedownOnItem(key,e) {
-    console.log(e.nativeEvent);
-    // let y = this.distanceFromListTop(pageY);
-    // this.setState({
-    //   movingItemKey: key,
-    //   movingY: y,
-    // });
-  },
-
   // touch handlers
   onMoveShouldSetResponder() {
     return true;
   },
 
-  onResponderGrant(e,dispatchID) {
+  extractContentY(e) {
     const {pageY} = e.nativeEvent;
-    const rowKey = this.findKeyOfItemAtPageY(pageY);
+    const {contentOffset} = this.state;
+    const contentY = pageY + contentOffset.y;
+    return contentY;
+  },
 
+  onResponderGrant(e) {
     // Start sorting given a long press.
     // Cancel the timer on release or termination.
+    const rowKey = this.findKeyOfItem(e);
+    const contentY = this.extractContentY(e);
+
     this.longpressSelectTimer = setTimeout(() => {
+
+
       console.log("selected",rowKey);
       this.setState({
         movingItemKey: rowKey,
-        movingY: pageY,
+        movingY: contentY,
         scrollEnabled: false,
       });
     },500);
   },
 
   onResponderMove(e) {
-    const {pageY} = e.nativeEvent;
     this.setState({
-      movingY: pageY,
+      movingY: this.extractContentY(e),
     });
     this.reorderItemsOnMove(e);
   },
@@ -336,14 +322,25 @@ let List = React.createClass({
     }
   },
 
+  onScroll(e) {
+    const {contentOffset} = e.nativeEvent;
+    this._contentOffset = contentOffset;
+    this.setState({contentOffset: contentOffset});
+  },
+
   render() {
-    const {scrollEnabled} = this.state;
+    const {scrollEnabled,contentOffset} = this.state;
     const {contentHeight,children} = this.renderItems();
 
     let css = List.css;
 
     return (
-      <ScrollView scrollEnabled={scrollEnabled}>
+      <ScrollView scrollEnabled={scrollEnabled}
+        scrollEventThrottle={2}
+        // contentOffset={contentOffset}
+        // contentInset={{top: 20}}
+        // automaticallyAdjustContentInsets={false}
+        onScroll={this.onScroll}>
         <View style={[css.container,{height: contentHeight}]}
 
 
@@ -356,6 +353,7 @@ let List = React.createClass({
           onResponderGrant={this.onResponderGrant}
           onResponderMove={this.onResponderMove}
           onResponderRelease={this.onResponderRelease}
+
 
           onResponderTerminate={this.onResponderTerminate}
           onResponderTerminationRequest={this.onResponderTerminationRequest}
@@ -395,7 +393,7 @@ const App = React.createClass({
   getInitialState() {
     let items = {};
 
-    QUOTES.slice(0,5).forEach((quote,i) => {
+    QUOTES.slice(0,10).forEach((quote,i) => {
       // Javascript hash preserves insertion order except for "numeric" keys.
       // Add a random prefix to avoid that.
       items[`@${i}`] = quote;
@@ -436,7 +434,7 @@ var textBoxStyle = {
 
 App.css = StyleSheet.create({
   container: {
-    paddingTop: 30,
+    // paddingTop: 30,
     flex: 1,
     backgroundColor: "#000445"
   },
