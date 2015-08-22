@@ -1,0 +1,13 @@
+{
+  "name": "TryReactMotion",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node_modules/react-native/packager/packager.sh"
+  },
+  "dependencies": {
+    "lodash": "^3.10.1",
+    "react": "^0.13.3",
+    "react-motion": "^0.2.7"
+  }
+}
