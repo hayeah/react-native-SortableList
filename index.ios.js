@@ -81,6 +81,7 @@ let List = React.createClass({
       // The key of the current item we are moving.
       movingItemKey: null,
       movingY: null,
+      scrollEnabled: true,
     };
   },
 
@@ -201,11 +202,16 @@ let List = React.createClass({
     const {pageY} = e.nativeEvent;
     const rowKey = this.findKeyOfItemAtPageY(pageY);
 
-    console.log("selected",rowKey);
-    this.setState({
-      movingItemKey: rowKey,
-      movingY: pageY,
-    });
+    // Start sorting given a long press.
+    // Cancel the timer on release or termination.
+    this.longpressSelectTimer = setTimeout(() => {
+      console.log("selected",rowKey);
+      this.setState({
+        movingItemKey: rowKey,
+        movingY: pageY,
+        scrollEnabled: false,
+      });
+    },500);
   },
 
   onResponderMove(e) {
@@ -217,14 +223,34 @@ let List = React.createClass({
   },
 
   onResponderRelease(e) {
+    this.resetMovingItem();
+  },
+
+  onResponderTerminationRequest() {
+    console.log("responder term req");
+    return true;
+  },
+
+  // responder status stolen by scrollview
+  onResponderTerminate() {
+    this.resetMovingItem();
+    console.log("responder terminated");
+  },
+
+  resetMovingItem() {
+    let tid = this.longpressSelectTimer
+    if(tid) {
+      clearTimeout(tid);
+    }
+
     this.setState({
       movingItemKey: null,
       movingY: null,
+      scrollEnabled: true,
     });
   },
 
-  render() {
-
+  renderItems() {
     const dataRenderer = this.props.children;
     if(typeof dataRenderer != 'function') {
       throw "must be a function"
@@ -233,7 +259,6 @@ let List = React.createClass({
     const {items,movingItemKey,movingY} = this.state;
 
     // calculate positions using layout dimensions.
-
     let curHeight = 0;
     const children = Object.keys(items).map((key) => {
         const item = items[key];
@@ -305,28 +330,41 @@ let List = React.createClass({
         );
     });
 
-    const contentHeight = curHeight;
+    return {
+      contentHeight: curHeight,
+      children,
+    }
+  },
 
+  render() {
+    const {scrollEnabled} = this.state;
+    const {contentHeight,children} = this.renderItems();
 
     let css = List.css;
 
     return (
-      <View style={[css.container,{height: contentHeight}]}
+      <ScrollView scrollEnabled={scrollEnabled}>
+        <View style={[css.container,{height: contentHeight}]}
 
 
-        ref="list"
-        // onTouchStart={this.onTouchStart}
-        // onTouchEnd={this.onTouchEnd}
+          ref="list"
+          // onTouchStart={this.onTouchStart}
+          // onTouchEnd={this.onTouchEnd}
 
-        onStartShouldSetResponder={this.onMoveShouldSetResponder}
-        // onResponderStart={this.onTouchStart}
-        onResponderGrant={this.onResponderGrant}
-        onResponderMove={this.onResponderMove}
-        onResponderRelease={this.onResponderRelease}
-        // style={{height: contentHeight}}
-        >
-        {children}
-      </View>
+          onStartShouldSetResponder={this.onMoveShouldSetResponder}
+          // onResponderStart={this.onTouchStart}
+          onResponderGrant={this.onResponderGrant}
+          onResponderMove={this.onResponderMove}
+          onResponderRelease={this.onResponderRelease}
+
+          onResponderTerminate={this.onResponderTerminate}
+          onResponderTerminationRequest={this.onResponderTerminationRequest}
+          // style={{height: contentHeight}}
+          >
+          {children}
+        </View>
+      </ScrollView>
+
 
     );
   }
@@ -375,10 +413,7 @@ const App = React.createClass({
 
     return (
       <View style={css.container}>
-        {/* <ScrollView>
 
-         </ScrollView>
-       */}
         <List items={items}>
           {item => <Text style={css.quoteText}>{item}</Text>}
         </List>
