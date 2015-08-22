@@ -202,25 +202,78 @@ let List = React.createClass({
   },
 
   onResponderMove(e) {
+    const {pageY} = e.nativeEvent;
+    console.log("move y",pageY);
     this.setState({
       movingY: this.extractContentY(e),
     });
+
     this.reorderItemsOnMove(e);
+
+    if(pageY >= 60 && this._autoScrollingInterval != null) {
+      clearInterval(this._autoScrollingInterval);
+      this._autoScrollingInterval = null;
+    }
+
+    // start auto scrolling up
+    if(pageY < 60 && this._autoScrollingInterval == null) {
+      console.log("start auto scroll");
+      let counter = 0;
+      this._autoScrollingInterval = setInterval(() => {
+        counter++;
+        console.log(this.state.contentOffset);
+        if(this.state.contentOffset.y > 0) {
+          let dy;
+          if(counter > 3) {
+            dy = 60;
+          } else {
+            dy = 30;
+          }
+          this.scrollBy(-dy);
+        }
+
+        // this.setState((state) => ({movingY: state.movingY + 1}));
+      },100);
+    }
+
+    if(pageY > 500 && this._autoScrollingInterval == null) {
+      console.log("start auto scroll");
+      let counter = 0;
+      this._autoScrollingInterval = setInterval(() => {
+        counter++;
+        // console.log(this.state.contentOffset);
+        // 675 is the screen height
+        if(this.state.contentOffset.y < (this._contentHeight - 675)) {
+          let dy;
+          if(counter > 3) {
+            dy = 60;
+          } else {
+            dy = 30;
+          }
+          this.scrollBy(dy);
+        }
+
+        // this.setState((state) => ({movingY: state.movingY + 1}));
+      },100);
+    }
   },
 
   onResponderRelease(e) {
     this.resetMovingItem();
   },
 
-  onResponderTerminationRequest() {
-    console.log("responder term req");
+  onResponderTerminationRequest(e) {
+    console.log("responder term req",e.nativeEvent);
+    if(this._autoScrollingInterval) {
+      return false;
+    }
     return true;
   },
 
   // responder status stolen by scrollview
   onResponderTerminate() {
     this.resetMovingItem();
-    console.log("responder terminated");
+    // console.log("responder terminated");
   },
 
   resetMovingItem() {
@@ -229,10 +282,39 @@ let List = React.createClass({
       clearTimeout(tid);
     }
 
+    let interval = this._autoScrollingInterval;
+    if(interval) {
+      console.log("clear interval")
+      this._autoScrollingInterval = null;
+      clearInterval(interval);
+    }
+
     this.setState({
       movingItemKey: null,
       movingY: null,
       scrollEnabled: true,
+    });
+  },
+
+  scrollBy(offset) {
+    this.setState(({contentOffset}) => {
+      const y = contentOffset.y + offset;
+
+      const newContentOffset = {
+        x: contentOffset.x,
+        y: y,
+      }
+
+
+      console.log("scroll to",y);
+
+      this.refs.scrollView.scrollTo(y,contentOffset.x);
+
+      // this.scrollTo()
+      // this.refs.scrollView.setNativeProps({
+      //   contentOffset: newContentOffset,
+      // });
+      return newContentOffset;
     });
   },
 
@@ -281,7 +363,7 @@ let List = React.createClass({
             scale: {val: 1.1},
             backgroundColor: '#33366A',
             top: {
-              val: movingY - layout.height/2 - 20,
+              val: movingY - layout.height/2 ,
               config: []
             },
           }
@@ -331,37 +413,60 @@ let List = React.createClass({
   render() {
     const {scrollEnabled,contentOffset} = this.state;
     const {contentHeight,children} = this.renderItems();
+    const scrollOffset = this._scrollOffset;
+
+    this._contentHeight = contentHeight;
+
+    // if(scrollOffset) {
+    //   this._scrollOffset = null;
+    // }
+
 
     let css = List.css;
 
     return (
-      <ScrollView scrollEnabled={scrollEnabled}
-        scrollEventThrottle={2}
-        // contentOffset={contentOffset}
-        // contentInset={{top: 20}}
-        // automaticallyAdjustContentInsets={false}
-        onScroll={this.onScroll}>
-        <View style={[css.container,{height: contentHeight}]}
+      <View style={css.container}>
+        {/*
+        <View style={css.buttonsContainer}>
+          <TouchableOpacity onPress={this.scrollDown}>
+            <Text style={css.buttonText}>Scroll Down</Text>
+          </TouchableOpacity>
 
-
-          ref="list"
-          // onTouchStart={this.onTouchStart}
-          // onTouchEnd={this.onTouchEnd}
-
-          onStartShouldSetResponder={this.onMoveShouldSetResponder}
-          // onResponderStart={this.onTouchStart}
-          onResponderGrant={this.onResponderGrant}
-          onResponderMove={this.onResponderMove}
-          onResponderRelease={this.onResponderRelease}
-
-
-          onResponderTerminate={this.onResponderTerminate}
-          onResponderTerminationRequest={this.onResponderTerminationRequest}
-          // style={{height: contentHeight}}
-          >
-          {children}
+          <TouchableOpacity onPress={this.scrollUp}>
+            <Text style={css.buttonText}>Scroll Up</Text>
+          </TouchableOpacity>
         </View>
-      </ScrollView>
+        */}
+
+
+        <ScrollView ref="scrollView" scrollEnabled={scrollEnabled}
+          scrollEventThrottle={2}
+          // contentOffset={scrollOffset && {top: contentOffset.y + scrollOffset}}
+          // contentInset={{top: 20}}
+          // automaticallyAdjustContentInsets={false}
+          onScroll={this.onScroll}>
+          <View style={[css.list,{height: contentHeight}]}
+
+
+            ref="list"
+            // onTouchStart={this.onTouchStart}
+            // onTouchEnd={this.onTouchEnd}
+
+            onStartShouldSetResponder={this.onMoveShouldSetResponder}
+            // onResponderStart={this.onTouchStart}
+            onResponderGrant={this.onResponderGrant}
+            onResponderMove={this.onResponderMove}
+            onResponderRelease={this.onResponderRelease}
+
+
+            onResponderTerminate={this.onResponderTerminate}
+            onResponderTerminationRequest={this.onResponderTerminationRequest}
+            // style={{height: contentHeight}}
+            >
+            {children}
+          </View>
+        </ScrollView>
+      </View>
 
 
     );
@@ -369,7 +474,22 @@ let List = React.createClass({
 });
 
 List.css = StyleSheet.create({
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+
+  buttonText: {
+    marginTop: 20,
+    padding: 10,
+    color: '#fff',
+  },
+
   container: {
+    flex: 1,
+  },
+
+  list: {
     flex: 1,
     // backgroundColor: 'rgba(255,0,0,0.3)',
     // alignSelf: 'stretch',
