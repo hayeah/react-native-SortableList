@@ -16,6 +16,14 @@ This is just a demo, if you want to play around with it, your best bet (at the m
 
 Reusable component coming soon!
 
+# Performance
+
+The animation can feel sluggish in development mode. On iPhone5 it runs at ~15fps if you randomly drag around an item as fast as you can. It turns out that most of the time is spent in dev-mode safety checks.
+
+When running on device be sure to turn on production mode, and you'd get proper ~60fps.
+
+See [Using offline bundle](https://facebook.github.io/react-native/docs/running-on-device-ios.html#using-offline-bundle).
+
 # API
 
 ```
