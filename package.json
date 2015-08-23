@@ -8,6 +8,7 @@
   "dependencies": {
     "lodash": "^3.10.1",
     "react": "^0.13.3",
+    "react-native": "https://github.com/hayeah/react-native.git#scrollview-responder-stealing-fix",
     "react-motion": "^0.2.7"
   }
 }
