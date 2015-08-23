@@ -536,11 +536,14 @@ const App = React.createClass({
           {item => <Text style={css.quoteText}>{item}</Text>}
         </List>
 
+        {/*
+
         <View style={css.shuffleContainer}>
           <TouchableOpacity style={css.shuffle} onPress={this.shuffle}>
             <Text style={css.shuffleText}>Shuffle</Text>
           </TouchableOpacity>
         </View>
+        */}
       </View>
     );
   },
