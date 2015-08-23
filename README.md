@@ -1,5 +1,7 @@
 ![Sortable List Demo](doc/native-sortable-list-demo.gif)
 
+[Built with React-Motion](https://github.com/chenglou/react-motion).
+
 # React Native Sortable List
 
 (proof-of-concept!)
