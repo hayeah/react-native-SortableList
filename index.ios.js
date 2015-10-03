@@ -4,7 +4,7 @@
  */
 // 'use strict';
 
-const ReactMotion = {Spring} = require("react-motion/native");
+const ReactMotion = {Motion, spring} = require("react-motion/native");
 const {reorderKeys} = ReactMotion.utils;
 
 const QUOTES = require("./quotes");
@@ -337,17 +337,17 @@ let List = React.createClass({
         if(layout) {
           style = {
             position: 'absolute',
-            top: {val: curHeight},
+            top: spring(curHeight),
             width: layout.width,
-            scale: {val: 1},
+            scale: spring(1),
             // opacity: 1,
           }
 
           curHeight = curHeight + layout.height;
         } else {
           style = {
-            top: {val: 0},
-            scale: {val: 1},
+            top: spring(0),
+            scale: spring(1),
             // opacity: 1,
           }
         }
@@ -360,20 +360,18 @@ let List = React.createClass({
         if(isSelected) {
           style = {
             ...style,
-            scale: {val: 1.1},
-            backgroundColor: '#33366A',
-            top: {
-              val: movingY - layout.height/2 ,
-              config: []
-            },
+            scale: spring(1.1),
+            // backgroundColor: '#33366A',
+            top: movingY - layout.height/2,
           }
         }
 
 
         return (
-          <Spring
+          <Motion
             key={key}
-            endValue={style}
+            defaultStyle={style}
+            style={style}
             >
             {({position,top,width,scale,backgroundColor}) => {
               let ss = {
@@ -381,7 +379,7 @@ let List = React.createClass({
                 // backgroundColor,
                 width,
                 // top: top.val,
-                transform: [{translateY: Math.ceil(top.val-0.5)},{scale: scale.val}],
+                transform: [{translateY: Math.ceil(top-0.5)},{scale: scale}],
               };
 
               return (
@@ -393,8 +391,7 @@ let List = React.createClass({
               );
             }}
 
-          </Spring>
-
+          </Motion>
         );
     });
 
